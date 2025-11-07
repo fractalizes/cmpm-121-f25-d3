@@ -53,17 +53,23 @@ function spawnCache(i: number, j: number) {
   rect.addTo(map);
 
   rect.bindPopup(() => {
-    const pointValue = 2 **
-      Math.floor(luck([i, j, "initialValue"].toString()) * 11);
+    if (!cacheValues.has(`${i},${j}`)) {
+      cacheValues.set(
+        `${i},${j}`,
+        2 ** Math.floor(luck([i, j, "initialValue"].toString()) * 11),
+      );
+    }
+    const pointValue = cacheValues.get(`${i},${j}`);
 
     // The popup offers a description and button
     const popupDiv = document.createElement("div");
     popupDiv.innerHTML = `
-      <div>There is a cache here at "${i},${j}".
-      It has value <span id="value">${pointValue}</span>.</div>
-      <button id="poke">poke</button>
+      <div>There is a cache here at <i>(${i},${j})</i>.
+      It has a value of <b><span id="value">${pointValue}</span></b>.</div>
+      <button id="poke">pick up!</button>
     `;
 
+    const valueSpan = popupDiv.querySelector<HTMLSpanElement>("#value")!;
     const pokeButton = popupDiv.querySelector<HTMLButtonElement>("#poke")!;
 
     // when button clicked, either:
@@ -74,11 +80,26 @@ function spawnCache(i: number, j: number) {
       if (playerPoints === 0) {
         playerPoints = pointValue!;
         statusPanelDiv.innerHTML = `
-          You have picked up a ${playerPoints}-point cache.<br>
+          You have picked up a <b>${playerPoints}</b>-point cache.<br>
           Place it at a cache with the same value!
         `;
         popupDiv.remove();
         rect.remove();
+      } else if (playerPoints !== pointValue) {
+        statusPanelDiv.innerHTML = `
+          You cannot merge the cache at <i>(${i},${j})</i> because that has a value of ${pointValue}!<br>
+          Currently, you are holding a <b>${playerPoints}</b>-point cache, please place this at a cache with the same value.
+        `;
+      } else {
+        cacheValues.set(`${i},${j}`, pointValue * 2);
+        playerPoints = 0;
+        valueSpan.innerHTML = cacheValues.get(`${i},${j}`)!.toString();
+        console.log(cacheValues.get(`${i},${j}`));
+        statusPanelDiv.innerHTML = `
+          Cache merged!<br>
+          The current cache at <i>(${i},${j})</i> is now worth <b>${valueSpan.innerHTML}</b> points.
+        `;
+        rect.closePopup().openPopup(); // refresh display
       }
     });
 
@@ -114,6 +135,9 @@ const CLASSROOM_LOCATION = {
 // default location if cannot retrieve player's current location
 let playerLocation: { latitude: number; longitude: number } =
   CLASSROOM_LOCATION;
+
+// save cache location points
+const cacheValues = new Map<string, number>();
 
 // gameplay parameters
 const GAMEPLAY_ZOOM_LEVEL = 19;

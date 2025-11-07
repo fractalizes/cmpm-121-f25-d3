@@ -30,5 +30,6 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] use loops to draw a whole grid of cells on the map
 - [x] remove the cell player picks up a token from that cell
 - [x] display value of token player is currently holding
-- [ ] detect when the player has a token of equal value of a cell
-- [ ] double the value of token in cell when token of equal value is placed on that cell
+- [x] detect when the player has a token of equal value of a cell
+- [x] double the value of token in cell when token of equal value is placed on that cell
+- [ ] can only interact with nearby cells (~three cells away)
