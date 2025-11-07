@@ -2,26 +2,33 @@
 
 # Game Design Vision
 
-{a few-sentence description of the game mechanics}
+This is a game where you walk around your area and collect stacks. Combine stacks with the same number to double it and so on. It is sort of like 2048, but you play it in the real world with your cell phone. Knock yourself out!
 
 # Technologies
 
-- TypeScript for most game code, little to no explicit HTML, and all CSS collected in common `style.css` file
-- Deno and Vite for building
-- GitHub Actions + GitHub Pages for deployment automation
+- Languages: TypeScript, HTML, CSS
+- Deployment Automation: GitHub Actions, GitHub Pages
+- Built using Deno and Vite
 
 # Assignments
 
 ## D3.a: Core Mechanics (token collection and crafting)
 
-Key technical challenge: Can you assemble a map-based user interface using the Leaflet mapping framework?
-Key gameplay challenge: Can players collect and craft tokens from nearby locations to finally make one of sufficiently high value?
+- Player can see cells on the map in their generated area
+- Player can pick up at most one token from a cell, and picking it up removes it from the cell
+- If the player is holding a token...
+  - they can see the value of their token
+  - they can place it onto a cell containing the same token value to create a new token that is double its original value
 
 ### Steps
 
 - [x] copy `main.ts` to `reference.ts` for future reference
 - [x] delete everything in `main.ts`
-- [ ] put a basic leaflet map on the screen
-- [ ] draw the player's location on the map
+- [x] put a basic leaflet map on the screen
+- [x] draw the player's location on the map
 - [ ] draw a rectangle representing one cell on the map
 - [ ] use loops to draw a whole grid of cells on the map
+- [ ] remove the cell player picks up a token from that cell
+- [ ] display value of token player is currently holding
+- [ ] detect when the player has a token of equal value of a cell
+- [ ] double the value of token in cell when token of equal value is placed on that cell
