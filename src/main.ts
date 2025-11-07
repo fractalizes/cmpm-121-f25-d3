@@ -1,38 +1,95 @@
+// ============================================= //
+// ===            LIBRARIES / CSS            === //
+// ============================================= //
+
 // @deno-types="npm:@types/leaflet"
 import leaflet from "leaflet";
 
-// Style sheets
 import "leaflet/dist/leaflet.css"; // supporting style for Leaflet
 import "./style.css"; // student-controlled page style
 
-// Fix missing marker images
-import "./_leafletWorkaround.ts"; // fixes for missing Leaflet images
+import "./_leafletWorkaround.ts"; // fixes for missing leaflet images
+import luck from "./_luck.ts"; // luck function
 
 // ============================================= //
 // ===               FUNCTIONS               === //
 // ============================================= //
-navigator.geolocation.getCurrentPosition(
-  (position) => {
-    const { latitude, longitude } = position.coords;
-    leaflet.marker([latitude, longitude])
-      .addTo(map)
-      .bindPopup("You are here!")
-      .openPopup();
-    map.setView([latitude, longitude], 15);
-  },
-  (error) => {
-    if (error.code === 1) alert("[ERROR] " + error.message);
-    else alert("[ERROR] GeoLocation is not supported");
-    leaflet.marker([CLASSROOM_LOCATION.latitude, CLASSROOM_LOCATION.longitude])
-      .addTo(map)
-      .bindPopup("You are here!")
-      .openPopup();
-  },
-);
+
+function getPlayerLocation(): Promise<GeolocationCoordinates> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("GeoLocation not supported"));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve(position.coords),
+      (error) => reject(error),
+    );
+  });
+}
+
+function markLocation(coords: { latitude: number; longitude: number }) {
+  leaflet.marker([coords.latitude, coords.longitude])
+    .addTo(map)
+    .bindPopup("This is you!")
+    .openPopup();
+}
+
+// add caches to the map by cell numbers
+function spawnCache(i: number, j: number) {
+  // convert cell numbers into lat/lng bounds
+  const origin = playerLocation;
+  const bounds = leaflet.latLngBounds([
+    [origin.latitude + i * TILE_DEGREES, origin.longitude + j * TILE_DEGREES],
+    [
+      origin.latitude + (i + 1) * TILE_DEGREES,
+      origin.longitude + (j + 1) * TILE_DEGREES,
+    ],
+  ]);
+
+  // add a rectangle to the map to represent the cache
+  const rect = leaflet.rectangle(bounds);
+  rect.addTo(map);
+
+  rect.bindPopup(() => {
+    const pointValue = 2 **
+      Math.floor(luck([i, j, "initialValue"].toString()) * 11);
+
+    // The popup offers a description and button
+    const popupDiv = document.createElement("div");
+    popupDiv.innerHTML = `
+      <div>There is a cache here at "${i},${j}".
+      It has value <span id="value">${pointValue}</span>.</div>
+      <button id="poke">poke</button>
+    `;
+
+    const pokeButton = popupDiv.querySelector<HTMLButtonElement>("#poke")!;
+
+    // when button clicked, either:
+    //  - remove cache when picked up and inventory empty
+    //  - tell user cache does not match value
+    //  - double the placed caches value and remove cache from inventory
+    pokeButton.addEventListener("click", () => {
+      if (playerPoints === 0) {
+        playerPoints = pointValue!;
+        statusPanelDiv.innerHTML = `
+          You have picked up a ${playerPoints}-point cache.<br>
+          Place it at a cache with the same value!
+        `;
+        popupDiv.remove();
+        rect.remove();
+      }
+    });
+
+    return popupDiv;
+  });
+}
 
 // ============================================= //
 // ===              UI ELEMENTS              === //
 // ============================================= //
+
 const controlPanelDiv = document.createElement("div");
 controlPanelDiv.id = "controlPanel";
 document.body.append(controlPanelDiv);
@@ -45,17 +102,32 @@ const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
 document.body.append(statusPanelDiv);
 
-// our classroom location
+// ============================================= //
+// ===               VARIABLES               === //
+// ============================================= //
+
 const CLASSROOM_LOCATION = {
   latitude: 36.997936938057016,
   longitude: -122.05703507501151,
 };
 
-// Tunable gameplay parameters
-const GAMEPLAY_ZOOM_LEVEL = 19;
+// default location if cannot retrieve player's current location
+let playerLocation: { latitude: number; longitude: number } =
+  CLASSROOM_LOCATION;
 
-// Create the map (element with id "map" is defined in index.html)
-const map = leaflet.map(mapDiv, {
+// gameplay parameters
+const GAMEPLAY_ZOOM_LEVEL = 19;
+const TILE_DEGREES = 1e-4;
+const NEIGHBORHOOD_SIZE = 8;
+const CACHE_SPAWN_PROBABILITY = 0.1;
+
+let playerPoints = 0;
+
+// ============================================= //
+// ===            GAME GENERATION            === //
+// ============================================= //
+
+const map = leaflet.map(mapDiv, { // element with id "map" is defined in index.html
   center: leaflet.latLng(
     CLASSROOM_LOCATION.latitude,
     CLASSROOM_LOCATION.longitude,
@@ -67,7 +139,7 @@ const map = leaflet.map(mapDiv, {
   scrollWheelZoom: false,
 });
 
-// Populate the map with a background tile layer
+// populate the map with a background tile layer
 leaflet
   .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -75,3 +147,23 @@ leaflet
       '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   })
   .addTo(map);
+
+getPlayerLocation()
+  .then((coords) => {
+    playerLocation = { latitude: coords.latitude, longitude: coords.longitude };
+    map.setView([coords.latitude, coords.longitude], 15);
+  })
+  .catch((error) => {
+    alert("[ERROR] " + error.message);
+  })
+  .finally(() => {
+    markLocation(playerLocation!);
+
+    for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
+      for (let j = -NEIGHBORHOOD_SIZE; j < NEIGHBORHOOD_SIZE; j++) {
+        if (luck([i, j].toString()) < CACHE_SPAWN_PROBABILITY) {
+          spawnCache(i, j); // spawn cache at (i,j) if lucky enough
+        }
+      }
+    }
+  });

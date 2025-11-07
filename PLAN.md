@@ -26,9 +26,9 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] delete everything in `main.ts`
 - [x] put a basic leaflet map on the screen
 - [x] draw the player's location on the map
-- [ ] draw a rectangle representing one cell on the map
-- [ ] use loops to draw a whole grid of cells on the map
-- [ ] remove the cell player picks up a token from that cell
-- [ ] display value of token player is currently holding
+- [x] draw a rectangle representing one cell on the map
+- [x] use loops to draw a whole grid of cells on the map
+- [x] remove the cell player picks up a token from that cell
+- [x] display value of token player is currently holding
 - [ ] detect when the player has a token of equal value of a cell
 - [ ] double the value of token in cell when token of equal value is placed on that cell
