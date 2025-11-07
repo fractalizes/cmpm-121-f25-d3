@@ -32,4 +32,4 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] display value of token player is currently holding
 - [x] detect when the player has a token of equal value of a cell
 - [x] double the value of token in cell when token of equal value is placed on that cell
-- [ ] can only interact with nearby cells (~three cells away)
+- [x] can only interact with nearby cells (~three cells away)

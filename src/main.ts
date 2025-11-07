@@ -52,59 +52,62 @@ function spawnCache(i: number, j: number) {
   const rect = leaflet.rectangle(bounds);
   rect.addTo(map);
 
-  rect.bindPopup(() => {
-    if (!cacheValues.has(`${i},${j}`)) {
-      cacheValues.set(
-        `${i},${j}`,
-        2 ** Math.floor(luck([i, j, "initialValue"].toString()) * 11),
-      );
-    }
-    const pointValue = cacheValues.get(`${i},${j}`);
+  // can only interact when within general area (~3 cells)
+  // otherwise, instantly close out of popup
+  if (i <= 3 && i >= -3 && j <= 3 && j >= -3) {
+    rect.bindPopup(() => {
+      if (!cacheValues.has(`${i},${j}`)) {
+        cacheValues.set(
+          `${i},${j}`,
+          2 ** Math.floor(luck([i, j, "initialValue"].toString()) * 11),
+        );
+      }
+      const pointValue = cacheValues.get(`${i},${j}`);
 
-    // The popup offers a description and button
-    const popupDiv = document.createElement("div");
-    popupDiv.innerHTML = `
+      // create popup description and button implementation
+      const popupDiv = document.createElement("div");
+      popupDiv.innerHTML = `
       <div>There is a cache here at <i>(${i},${j})</i>.
       It has a value of <b><span id="value">${pointValue}</span></b>.</div>
       <button id="poke">pick up!</button>
     `;
 
-    const valueSpan = popupDiv.querySelector<HTMLSpanElement>("#value")!;
-    const pokeButton = popupDiv.querySelector<HTMLButtonElement>("#poke")!;
+      const valueSpan = popupDiv.querySelector<HTMLSpanElement>("#value")!;
+      const pokeButton = popupDiv.querySelector<HTMLButtonElement>("#poke")!;
 
-    // when button clicked, either:
-    //  - remove cache when picked up and inventory empty
-    //  - tell user cache does not match value
-    //  - double the placed caches value and remove cache from inventory
-    pokeButton.addEventListener("click", () => {
-      if (playerPoints === 0) {
-        playerPoints = pointValue!;
-        statusPanelDiv.innerHTML = `
+      // when button clicked, either:
+      //  - remove cache when picked up and inventory empty
+      //  - tell user cache does not match value
+      //  - double the placed caches value and remove cache from inventory
+      pokeButton.addEventListener("click", () => {
+        if (playerPoints === 0) {
+          playerPoints = pointValue!;
+          statusPanelDiv.innerHTML = `
           You have picked up a <b>${playerPoints}</b>-point cache.<br>
           Place it at a cache with the same value!
         `;
-        popupDiv.remove();
-        rect.remove();
-      } else if (playerPoints !== pointValue) {
-        statusPanelDiv.innerHTML = `
+          popupDiv.remove();
+          rect.remove();
+        } else if (playerPoints !== pointValue) {
+          statusPanelDiv.innerHTML = `
           You cannot merge the cache at <i>(${i},${j})</i> because that has a value of ${pointValue}!<br>
           Currently, you are holding a <b>${playerPoints}</b>-point cache, please place this at a cache with the same value.
         `;
-      } else {
-        cacheValues.set(`${i},${j}`, pointValue * 2);
-        playerPoints = 0;
-        valueSpan.innerHTML = cacheValues.get(`${i},${j}`)!.toString();
-        console.log(cacheValues.get(`${i},${j}`));
-        statusPanelDiv.innerHTML = `
+        } else {
+          cacheValues.set(`${i},${j}`, pointValue * 2);
+          playerPoints = 0;
+          valueSpan.innerHTML = cacheValues.get(`${i},${j}`)!.toString();
+          console.log(cacheValues.get(`${i},${j}`));
+          statusPanelDiv.innerHTML = `
           Cache merged!<br>
           The current cache at <i>(${i},${j})</i> is now worth <b>${valueSpan.innerHTML}</b> points.
         `;
-        rect.closePopup().openPopup(); // refresh display
-      }
+          rect.closePopup().openPopup(); // refresh display
+        }
+      });
+      return popupDiv;
     });
-
-    return popupDiv;
-  });
+  }
 }
 
 // ============================================= //
