@@ -33,3 +33,27 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] detect when the player has a token of equal value of a cell
 - [x] double the value of token in cell when token of equal value is placed on that cell
 - [x] can only interact with nearby cells (~three cells away)
+
+## D3.b: Core Mechanics (movement and progression)
+
+- Player can move themselves around the map and see cells wherever they choose to go
+- Player can only interact with cells near their current location
+- Cells should not remember their state once loaded off the screen
+- Crafting now increases the token's values
+- Win condition should be present once player reaches certain crafting threshold
+
+## Steps
+
+- [ ] general housekeeping/cleaning for `main.ts` from last assignment
+- [ ] make cells only generate token value of either 0 or 1
+- [ ] draw a circle around player to show what cells they can interact with
+- [ ] if a cell has value, draw the value of its token on the rectangle
+- [ ] player can drop a token in their inventory on a cell that has no value
+- [ ] create new interface/type for modeling grid cells
+- [ ] create function that maps latitude-longitude to cell id
+- [ ] create function that takes cell id and returns as latitude-longitude
+- [ ] create buttons for player movement (up, down, left, right)
+- [ ] player should now be able to move across map using movement buttons
+- [ ] regenerate cells when map fires moveend event
+- [ ] cells are now drawn across the entirety of map
+- [ ] create win event when player reaches win condition threshold
