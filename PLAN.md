@@ -56,4 +56,4 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] player should now be able to move across map using movement buttons
 - [x] regenerate cells when map fires moveend event
 - [x] cells are now drawn across the entirety of map
-- [ ] create win event when player reaches win condition threshold
+- [x] create win event when player reaches win condition threshold

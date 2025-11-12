@@ -169,10 +169,11 @@ function ijToLatLong(gridCell: CellId) {
 }
 
 function generateWorld() {
-  for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
-    for (let j = -NEIGHBORHOOD_SIZE; j < NEIGHBORHOOD_SIZE; j++) {
-      createGrid({ i: i + 0.5, j: j + 0.5 });
-      spawnToken({ i: i + 0.5, j: j + 0.5 });
+  const center = latlongToIJ(player.getLocation());
+  for (let i = -NEIGHBORHOOD_LENGTH; i < NEIGHBORHOOD_LENGTH; i++) {
+    for (let j = -NEIGHBORHOOD_WIDTH; j < NEIGHBORHOOD_WIDTH; j++) {
+      createGrid({ i: center.i + i + 0.5, j: center.j + j + 0.5 });
+      spawnToken({ i: center.i + i + 0.5, j: center.j + j + 0.5 });
     }
   }
 }
@@ -268,8 +269,8 @@ function updateTokens() {
     map.removeLayer(marker);
   }
   tokens.splice(0, tokens.length);
-  for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
-    for (let j = -NEIGHBORHOOD_SIZE; j < NEIGHBORHOOD_SIZE; j++) {
+  for (let i = -NEIGHBORHOOD_LENGTH; i < NEIGHBORHOOD_LENGTH; i++) {
+    for (let j = -NEIGHBORHOOD_WIDTH; j < NEIGHBORHOOD_WIDTH; j++) {
       spawnToken({ i: i + 0.5, j: j + 0.5 });
     }
   }
@@ -308,9 +309,18 @@ function interactToken(gridCell: CellId) {
         player.setHighest(newValue);
       }
       player.setInv(0);
-      statusPanelDiv.innerHTML = `
-        Token merged! This token is now worth ${tokenIcons[pointValue]} points.
-      `;
+      statusPanelDiv.innerHTML = player.getHighest() == tokenIcons.length
+        ? `
+          Congratulations! You have crafted a ${
+          tokenIcons[tokenIcons.length - 1]
+        } so you have officially beat the game!
+        `
+        : `
+          Token merged! This token is now worth ${
+          tokenIcons[pointValue]
+        } points.<br>
+          Your current highest token is ${tokenIcons[player.getHighest() - 1]}
+        `;
     }
   } else {
     statusPanelDiv.innerHTML = `
@@ -403,12 +413,20 @@ bus.addEventListener("location-changed", () => {
 // gameplay parameters
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
-const NEIGHBORHOOD_SIZE = 32;
+const NEIGHBORHOOD_LENGTH = 8;
+const NEIGHBORHOOD_WIDTH = 32;
 const CACHE_SPAWN_PROBABILITY = 0.2;
 
 // ============================================= //
 // ===            GAME GENERATION            === //
 // ============================================= //
+
+statusPanelDiv.innerHTML = `
+  Welcome to <b>Stacks!</b> In this game, your objective is to stack tokens of the same color to create new colors.<br>
+  Your end goal is to create a token stack with the color ${
+  tokenIcons[tokenIcons.length - 1]
+}, good luck!
+`;
 
 const map = leaflet.map(mapDiv, { // element with id "map" is defined in index.html
   center: leaflet.latLng(
