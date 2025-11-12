@@ -2,7 +2,7 @@
 
 # Game Design Vision
 
-This is a game where you walk around your area and collect stacks. Combine stacks with the same number to double it and so on. It is sort of like 2048, but you play it in the real world with your cell phone. Knock yourself out!
+This is a game where you walk around your area and collect stacks. Combine stacks with the same color to double it and so on. It is sort of like 2048, but you play it in the real world with your cell phone. Alternatively, you can try it on your computer with directional inputs. Knock yourself out!
 
 # Technologies
 
@@ -44,9 +44,9 @@ This is a game where you walk around your area and collect stacks. Combine stack
 
 ## Steps
 
-- [ ] general housekeeping/cleaning for `main.ts` from last assignment
-- [ ] make cells only generate token value of either 0 or 1
-- [ ] draw a circle around player to show what cells they can interact with
+- [x] general housekeeping/cleaning for `main.ts` from last assignment
+- [x] make cells only generate token value of either 0 or 1
+- [x] draw a circle around player to show what cells they can interact with
 - [ ] if a cell has value, draw the value of its token on the rectangle
 - [ ] player can drop a token in their inventory on a cell that has no value
 - [ ] create new interface/type for modeling grid cells

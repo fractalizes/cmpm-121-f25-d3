@@ -12,34 +12,78 @@ import "./_leafletWorkaround.ts"; // fixes for missing leaflet images
 import luck from "./_luck.ts"; // luck function
 
 // ============================================= //
-// ===               FUNCTIONS               === //
+// ===      CLASSES / TYPE / INTERFACES      === //
 // ============================================= //
 
-function getPlayerLocation(): Promise<GeolocationCoordinates> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("GeoLocation not supported"));
-      return;
-    }
+class Player {
+  private location: { latitude: number; longitude: number };
+  constructor(
+    private inv: number,
+    private highest: number,
+  ) {
+    // default location if cannot retrieve player's current location
+    this.location = CLASSROOM_LOCATION;
+  }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => resolve(position.coords),
-      (error) => reject(error),
-    );
-  });
+  markLocation() {
+    leaflet.marker([this.location.latitude, this.location.longitude])
+      .addTo(map)
+      .bindPopup("This is you!")
+      .openPopup();
+    leaflet.circle([this.location.latitude, this.location.longitude], {
+      radius: 13,
+    })
+      .addTo(map)
+      .openPopup();
+  }
+
+  retrieveGeo(): Promise<GeolocationCoordinates> {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("GeoLocation not supported"));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => resolve(position.coords),
+        (error) => reject(error),
+      );
+    });
+  }
+
+  getLocation() {
+    return this.location;
+  }
+
+  setLocation(coords: { latitude: number; longitude: number }) {
+    this.location = coords;
+  }
+
+  getInv() {
+    return this.inv;
+  }
+
+  setInv(points: number) {
+    this.inv = points;
+  }
+
+  getHighest() {
+    return this.highest;
+  }
+
+  setHighest(points: number) {
+    this.highest = points;
+  }
 }
 
-function markLocation(coords: { latitude: number; longitude: number }) {
-  leaflet.marker([coords.latitude, coords.longitude])
-    .addTo(map)
-    .bindPopup("This is you!")
-    .openPopup();
-}
+// ============================================= //
+// ===               FUNCTIONS               === //
+// ============================================= //
 
 // add caches to the map by cell numbers
 function spawnCache(i: number, j: number) {
   // convert cell numbers into lat/lng bounds
-  const origin = playerLocation;
+  const origin = player.getLocation();
   const bounds = leaflet.latLngBounds([
     [origin.latitude + i * TILE_DEGREES, origin.longitude + j * TILE_DEGREES],
     [
@@ -49,65 +93,77 @@ function spawnCache(i: number, j: number) {
   ]);
 
   // add a rectangle to the map to represent the cache
-  const rect = leaflet.rectangle(bounds);
+  const rect = leaflet.rectangle(bounds, { color: "#00A354" });
   rect.addTo(map);
 
-  // can only interact when within general area (~3 cells)
-  // otherwise, instantly close out of popup
-  if (i <= 3 && i >= -3 && j <= 3 && j >= -3) {
-    rect.bindPopup(() => {
-      if (!cacheValues.has(`${i},${j}`)) {
-        cacheValues.set(
-          `${i},${j}`,
-          2 ** Math.floor(luck([i, j, "initialValue"].toString()) * 11),
-        );
-      }
-      const pointValue = cacheValues.get(`${i},${j}`);
-
-      // create popup description and button implementation
-      const popupDiv = document.createElement("div");
-      popupDiv.innerHTML = `
-      <div>There is a cache here at <i>(${i},${j})</i>.
-      It has a value of <b><span id="value">${pointValue}</span></b>.</div>
-      <button id="poke">pick up!</button>
-    `;
-
-      const valueSpan = popupDiv.querySelector<HTMLSpanElement>("#value")!;
-      const pokeButton = popupDiv.querySelector<HTMLButtonElement>("#poke")!;
-
-      // when button clicked, either:
-      //  - remove cache when picked up and inventory empty
-      //  - tell user cache does not match value
-      //  - double the placed caches value and remove cache from inventory
-      pokeButton.addEventListener("click", () => {
-        if (playerPoints === 0) {
-          playerPoints = pointValue!;
-          statusPanelDiv.innerHTML = `
-          You have picked up a <b>${playerPoints}</b>-point cache.<br>
-          Place it at a cache with the same value!
-        `;
-          popupDiv.remove();
-          rect.remove();
-        } else if (playerPoints !== pointValue) {
-          statusPanelDiv.innerHTML = `
-          You cannot merge the cache at <i>(${i},${j})</i> because that has a value of ${pointValue}!<br>
-          Currently, you are holding a <b>${playerPoints}</b>-point cache, please place this at a cache with the same value.
-        `;
-        } else {
-          cacheValues.set(`${i},${j}`, pointValue * 2);
-          playerPoints = 0;
-          valueSpan.innerHTML = cacheValues.get(`${i},${j}`)!.toString();
-          console.log(cacheValues.get(`${i},${j}`));
-          statusPanelDiv.innerHTML = `
-          Cache merged!<br>
-          The current cache at <i>(${i},${j})</i> is now worth <b>${valueSpan.innerHTML}</b> points.
-        `;
-          rect.closePopup().openPopup(); // refresh display
-        }
-      });
-      return popupDiv;
-    });
+  if (!cacheValues.has(`${i},${j}`)) {
+    cacheValues.set(
+      `${i},${j}`,
+      luck([i, j].toString()) >= 0.5 ? 1 : 0,
+    );
   }
+
+  const radius = 3;
+  if (i <= radius && i >= -radius && j <= radius && j >= -radius) { // if user is within range
+    rect.on("click", () => {
+      pickUpToken(i, j);
+    });
+  } else {
+    rect.bindPopup(outOfRange);
+  }
+}
+
+function pickUpToken(i: number, j: number) {
+  const pointValue = cacheValues.get(`${i},${j}`)!;
+
+  if (player.getInv() === 0) {
+    player.setInv(pointValue);
+    cacheValues.set(`${i},${j}`, 0);
+    statusPanelDiv.innerHTML = `
+      You have picked up a <b>${player.getInv()}</b>-point cache.<br>
+      Place it at a cache with the same value!
+    `;
+  } else {
+    if (pointValue === 0) {
+      statusPanelDiv.innerHTML = `
+        Tokens merged!<br>
+        The current token at <i>(${i},${j})</i> is now worth <b>${
+        cacheValues.get(`${i},${j}`)
+      } </b> points.
+      `;
+    } else if (player.getInv() !== pointValue) {
+      statusPanelDiv.innerHTML = `
+        You cannot merge the token at <i>(${i},${j})</i> because that has a value of ${pointValue}!<br>
+        Currently, you are holding a <b>${player.getInv()}</b>-point token, please place this at a token with the same value.
+      `;
+    } else {
+      cacheValues.set(`${i},${j}`, pointValue * 2);
+      const newValue = cacheValues.get(`${i},${j}`)!;
+      if (newValue > player.getHighest()) {
+        player.setHighest(newValue);
+      }
+      player.setInv(0);
+      statusPanelDiv.innerHTML = `
+        Cache merged!<br>
+        The current token at <i>(${i},${j})</i> is now worth <b>${newValue} </b> points.
+      `;
+    }
+  }
+}
+
+function outOfRange() {
+  const popupDiv = document.createElement("div");
+  popupDiv.innerHTML = `
+    <div>This cell is too far away! Move closer to it to interact with it!<br>
+    <button id="confirm">ok</button>
+  `;
+  const confirmButton = popupDiv.querySelector(
+    "#confirm",
+  )! as HTMLButtonElement;
+  confirmButton.addEventListener("click", () => {
+    popupDiv.remove();
+  });
+  return popupDiv;
 }
 
 // ============================================= //
@@ -135,9 +191,7 @@ const CLASSROOM_LOCATION = {
   longitude: -122.05703507501151,
 };
 
-// default location if cannot retrieve player's current location
-let playerLocation: { latitude: number; longitude: number } =
-  CLASSROOM_LOCATION;
+const player: Player = new Player(0, 0);
 
 // save cache location points
 const cacheValues = new Map<string, number>();
@@ -146,9 +200,6 @@ const cacheValues = new Map<string, number>();
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
 const NEIGHBORHOOD_SIZE = 8;
-const CACHE_SPAWN_PROBABILITY = 0.1;
-
-let playerPoints = 0;
 
 // ============================================= //
 // ===            GAME GENERATION            === //
@@ -175,22 +226,23 @@ leaflet
   })
   .addTo(map);
 
-getPlayerLocation()
+player.retrieveGeo()
   .then((coords) => {
-    playerLocation = { latitude: coords.latitude, longitude: coords.longitude };
+    player.setLocation({
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+    });
     map.setView([coords.latitude, coords.longitude], 15);
   })
   .catch((error) => {
     alert("[ERROR] " + error.message);
   })
   .finally(() => {
-    markLocation(playerLocation!);
-
-    for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
-      for (let j = -NEIGHBORHOOD_SIZE; j < NEIGHBORHOOD_SIZE; j++) {
-        if (luck([i, j].toString()) < CACHE_SPAWN_PROBABILITY) {
-          spawnCache(i, j); // spawn cache at (i,j) if lucky enough
-        }
-      }
-    }
+    player.markLocation();
   });
+
+for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
+  for (let j = -NEIGHBORHOOD_SIZE * 4; j < NEIGHBORHOOD_SIZE * 4; j++) {
+    spawnCache(i + 0.5, j + 0.5);
+  }
+}
