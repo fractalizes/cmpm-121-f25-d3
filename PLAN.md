@@ -54,6 +54,6 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] create function that takes cell id and returns as latitude-longitude
 - [x] create buttons for player movement (up, down, left, right)
 - [x] player should now be able to move across map using movement buttons
-- [ ] regenerate cells when map fires moveend event
-- [ ] cells are now drawn across the entirety of map
+- [x] regenerate cells when map fires moveend event
+- [x] cells are now drawn across the entirety of map
 - [ ] create win event when player reaches win condition threshold
