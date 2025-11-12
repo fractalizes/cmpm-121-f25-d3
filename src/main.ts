@@ -31,7 +31,7 @@ class Player {
       .bindPopup("This is you!")
       .openPopup();
     leaflet.circle([this.location.latitude, this.location.longitude], {
-      radius: 13,
+      radius: 23,
     })
       .addTo(map)
       .openPopup();
@@ -76,79 +76,160 @@ class Player {
   }
 }
 
+type latLong = { latitude: number; longitude: number };
+type cellId = { i: number; j: number };
+
 // ============================================= //
 // ===               FUNCTIONS               === //
 // ============================================= //
 
-// add caches to the map by cell numbers
-function spawnCache(i: number, j: number) {
+function notify(name: string) {
+  bus.dispatchEvent(new Event(name));
+}
+
+function latlongToIJ(coords: latLong) {
+  return {
+    i: player.getLocation().latitude / (coords.latitude * TILE_DEGREES),
+    j: coords.longitude / (player.getLocation().longitude * TILE_DEGREES),
+  };
+}
+
+function ijToLatLong(gridCell: cellId) {
+  return {
+    latitude: player.getLocation().latitude - gridCell.j * TILE_DEGREES,
+    longitude: player.getLocation().longitude + gridCell.i * TILE_DEGREES,
+  };
+}
+
+function createTokenMarker(points: number) {
+  return leaflet.divIcon({
+    className: "",
+    html: `
+      <div style="font-size:20px"> ${tokenIcons[points - 1]} </div>
+    `,
+  });
+}
+
+function createGrid(cell: cellId) {
   // convert cell numbers into lat/lng bounds
   const origin = player.getLocation();
   const bounds = leaflet.latLngBounds([
-    [origin.latitude + i * TILE_DEGREES, origin.longitude + j * TILE_DEGREES],
     [
-      origin.latitude + (i + 1) * TILE_DEGREES,
-      origin.longitude + (j + 1) * TILE_DEGREES,
+      origin.latitude + cell.i * TILE_DEGREES,
+      origin.longitude + cell.j * TILE_DEGREES,
+    ],
+    [
+      origin.latitude + (cell.i + 1) * TILE_DEGREES,
+      origin.longitude + (cell.j + 1) * TILE_DEGREES,
     ],
   ]);
-
-  // add a rectangle to the map to represent the cache
-  const rect = leaflet.rectangle(bounds, { color: "#00A354" });
+  const rect = leaflet.rectangle(bounds, {
+    color: "#00A354",
+  });
   rect.addTo(map);
 
-  if (!cacheValues.has(`${i},${j}`)) {
-    cacheValues.set(
-      `${i},${j}`,
-      luck([i, j].toString()) >= 0.5 ? 1 : 0,
-    );
-  }
-
+  // if user is within range
   const radius = 3;
-  if (i <= radius && i >= -radius && j <= radius && j >= -radius) { // if user is within range
-    rect.on("click", () => {
-      pickUpToken(i, j);
+  if (
+    cell.i <= radius && cell.i >= -radius &&
+    cell.j <= radius && cell.j >= -radius
+  ) {
+    rect.addEventListener("click", () => {
+      interactToken({ i: cell.i, j: cell.j });
     });
   } else {
     rect.bindPopup(outOfRange);
   }
 }
 
-function pickUpToken(i: number, j: number) {
-  const pointValue = cacheValues.get(`${i},${j}`)!;
+function updateTokens() {
+  for (const marker of tokens) {
+    map.removeLayer(marker);
+  }
+  tokens.splice(0, tokens.length);
+  for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
+    for (let j = -NEIGHBORHOOD_SIZE * 4; j < NEIGHBORHOOD_SIZE * 4; j++) {
+      spawnToken({ i: i + 0.5, j: j + 0.5 });
+    }
+  }
+}
 
-  if (player.getInv() === 0) {
+// add tokens to the map by cell numbers
+function spawnToken(cell: cellId) {
+  // convert cell numbers into lat/lng bounds
+  const origin = player.getLocation();
+
+  const key = `${cell.i},${cell.j}`;
+  if (!tokenValues.has(key)) {
+    // Initialize only if not already set
+    tokenValues.set(key, luck(key) <= CACHE_SPAWN_PROBABILITY ? 1 : 0);
+  }
+  const value = tokenValues.get(key)!;
+  if (value > 0) {
+    const tokenMarker = leaflet.marker([
+      origin.latitude + (cell.i + 0.75) * TILE_DEGREES,
+      origin.longitude + (cell.j + 0.25) * TILE_DEGREES,
+    ]);
+    tokenMarker
+      .addTo(map)
+      .setIcon(createTokenMarker(value));
+    tokens.push(tokenMarker);
+
+    // if user is within range
+    const radius = 3;
+    if (
+      cell.i <= radius && cell.i >= -radius &&
+      cell.j <= radius && cell.j >= -radius
+    ) {
+      tokenMarker.addEventListener("click", () => {
+        interactToken({ i: cell.i, j: cell.j });
+      });
+    } else {
+      tokenMarker.bindPopup(outOfRange);
+    }
+  }
+}
+
+function interactToken(gridCell: cellId) {
+  const pointValue = tokenValues.get(`${gridCell.i},${gridCell.j}`)!;
+
+  if (player.getInv() === 0 && pointValue > 0) {
     player.setInv(pointValue);
-    cacheValues.set(`${i},${j}`, 0);
+    tokenValues.set(`${gridCell.i},${gridCell.j}`, 0);
     statusPanelDiv.innerHTML = `
-      You have picked up a <b>${player.getInv()}</b>-point cache.<br>
-      Place it at a cache with the same value!
+      You have picked up a <b>${player.getInv()}</b>-point token.<br>
+      Place it at a token with the same value!
     `;
-  } else {
+  } else if (player.getInv() > 0) {
     if (pointValue === 0) {
+      tokenValues.set(`${gridCell.i},${gridCell.j}`, player.getInv());
       statusPanelDiv.innerHTML = `
-        Tokens merged!<br>
-        The current token at <i>(${i},${j})</i> is now worth <b>${
-        cacheValues.get(`${i},${j}`)
-      } </b> points.
+        You have placed the ${player.getInv()}-point token at <i>(${gridCell.i},${gridCell.j})</i>
       `;
+      player.setInv(0);
     } else if (player.getInv() !== pointValue) {
       statusPanelDiv.innerHTML = `
-        You cannot merge the token at <i>(${i},${j})</i> because that has a value of ${pointValue}!<br>
+        You cannot merge the token at <i>(${gridCell.i},${gridCell.j})</i> because that has a value of ${pointValue}!<br>
         Currently, you are holding a <b>${player.getInv()}</b>-point token, please place this at a token with the same value.
       `;
     } else {
-      cacheValues.set(`${i},${j}`, pointValue * 2);
-      const newValue = cacheValues.get(`${i},${j}`)!;
+      tokenValues.set(`${gridCell.i},${gridCell.j}`, pointValue * 2);
+      const newValue = tokenValues.get(`${gridCell.i},${gridCell.j}`)!;
       if (newValue > player.getHighest()) {
         player.setHighest(newValue);
       }
       player.setInv(0);
       statusPanelDiv.innerHTML = `
-        Cache merged!<br>
-        The current token at <i>(${i},${j})</i> is now worth <b>${newValue} </b> points.
+        Token merged!<br>
+        The current token at <i>(${gridCell.i},${gridCell.j})</i> is now worth <b>${newValue} </b> points.
       `;
     }
+  } else {
+    statusPanelDiv.innerHTML = `
+      Please pick up a valid token!
+    `;
   }
+  notify("token-changed");
 }
 
 function outOfRange() {
@@ -192,14 +273,20 @@ const CLASSROOM_LOCATION = {
 };
 
 const player: Player = new Player(0, 0);
+const tokenIcons = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣"];
 
-// save cache location points
-const cacheValues = new Map<string, number>();
+// save token location points
+const tokenValues = new Map<string, number>();
+const tokens: leaflet.Marker[] = [];
+
+const bus = new EventTarget();
+bus.addEventListener("token-changed", updateTokens);
 
 // gameplay parameters
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
 const NEIGHBORHOOD_SIZE = 8;
+const CACHE_SPAWN_PROBABILITY = 0.2;
 
 // ============================================= //
 // ===            GAME GENERATION            === //
@@ -228,6 +315,7 @@ leaflet
 
 player.retrieveGeo()
   .then((coords) => {
+    console.log(coords);
     player.setLocation({
       latitude: coords.latitude,
       longitude: coords.longitude,
@@ -239,10 +327,10 @@ player.retrieveGeo()
   })
   .finally(() => {
     player.markLocation();
+    for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
+      for (let j = -NEIGHBORHOOD_SIZE * 4; j < NEIGHBORHOOD_SIZE * 4; j++) {
+        createGrid({ i: i + 0.5, j: j + 0.5 });
+        spawnToken({ i: i + 0.5, j: j + 0.5 });
+      }
+    }
   });
-
-for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
-  for (let j = -NEIGHBORHOOD_SIZE * 4; j < NEIGHBORHOOD_SIZE * 4; j++) {
-    spawnCache(i + 0.5, j + 0.5);
-  }
-}

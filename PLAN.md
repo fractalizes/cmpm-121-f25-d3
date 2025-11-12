@@ -47,11 +47,11 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] general housekeeping/cleaning for `main.ts` from last assignment
 - [x] make cells only generate token value of either 0 or 1
 - [x] draw a circle around player to show what cells they can interact with
-- [ ] if a cell has value, draw the value of its token on the rectangle
-- [ ] player can drop a token in their inventory on a cell that has no value
-- [ ] create new interface/type for modeling grid cells
-- [ ] create function that maps latitude-longitude to cell id
-- [ ] create function that takes cell id and returns as latitude-longitude
+- [x] if a cell has value, draw the value of its token on the rectangle
+- [x] player can drop a token in their inventory on a cell that has no value
+- [x] create new interface/type for modeling grid cells
+- [x] create function that maps latitude-longitude to cell id
+- [x] create function that takes cell id and returns as latitude-longitude
 - [ ] create buttons for player movement (up, down, left, right)
 - [ ] player should now be able to move across map using movement buttons
 - [ ] regenerate cells when map fires moveend event
