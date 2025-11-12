@@ -17,24 +17,48 @@ import luck from "./_luck.ts"; // luck function
 
 class Player {
   private location: { latitude: number; longitude: number };
+  private marker: leaflet.Marker;
+  private circle: leaflet.Circle;
+
   constructor(
     private inv: number,
     private highest: number,
   ) {
     // default location if cannot retrieve player's current location
     this.location = CLASSROOM_LOCATION;
+    this.marker = leaflet.marker([
+      this.location.latitude,
+      this.location.longitude,
+    ]);
+    this.circle = leaflet.circle([
+      this.location.latitude,
+      this.location.longitude,
+    ], {
+      radius: 23,
+    });
   }
 
   markLocation() {
-    leaflet.marker([this.location.latitude, this.location.longitude])
+    this.marker
       .addTo(map)
       .bindPopup("This is you!")
       .openPopup();
-    leaflet.circle([this.location.latitude, this.location.longitude], {
-      radius: 23,
-    })
+    this.circle
       .addTo(map)
       .openPopup();
+  }
+
+  updateLocation() {
+    this.marker.setLatLng([
+      this.location.latitude,
+      this.location.longitude,
+    ]);
+    this.circle.setLatLng([
+      this.location.latitude,
+      this.location.longitude,
+    ]);
+
+    map.panTo(this.marker.getLatLng());
   }
 
   retrieveGeo(): Promise<GeolocationCoordinates> {
@@ -49,6 +73,25 @@ class Player {
         (error) => reject(error),
       );
     });
+  }
+
+  move(playerDirection: Direction) {
+    this.location = {
+      latitude: this.location.latitude + (
+        playerDirection == "up"
+          ? TILE_DEGREES
+          : playerDirection == "down"
+          ? -TILE_DEGREES
+          : 0
+      ),
+      longitude: this.location.longitude + (
+        playerDirection == "left"
+          ? -TILE_DEGREES
+          : playerDirection == "right"
+          ? TILE_DEGREES
+          : 0
+      ),
+    };
   }
 
   getLocation() {
@@ -76,8 +119,14 @@ class Player {
   }
 }
 
-type latLong = { latitude: number; longitude: number };
-type cellId = { i: number; j: number };
+type Direction = "up" | "down" | "left" | "right";
+type LatLong = { latitude: number; longitude: number };
+type CellId = { i: number; j: number };
+
+interface MoveButton {
+  button: HTMLButtonElement;
+  direction: Direction;
+}
 
 // ============================================= //
 // ===               FUNCTIONS               === //
@@ -87,19 +136,25 @@ function notify(name: string) {
   bus.dispatchEvent(new Event(name));
 }
 
-function latlongToIJ(coords: latLong) {
+/*
+function latlongToIJ(coords: LatLong) {
   return {
-    i: player.getLocation().latitude / (coords.latitude * TILE_DEGREES),
-    j: coords.longitude / (player.getLocation().longitude * TILE_DEGREES),
+    i: Math.floor(
+      coords.latitude - player.getLocation().latitude / TILE_DEGREES,
+    ),
+    j: Math.floor(
+      coords.longitude - player.getLocation().longitude / TILE_DEGREES,
+    ),
   };
 }
 
-function ijToLatLong(gridCell: cellId) {
+function ijToLatLong(gridCell: CellId) {
   return {
-    latitude: player.getLocation().latitude - gridCell.j * TILE_DEGREES,
-    longitude: player.getLocation().longitude + gridCell.i * TILE_DEGREES,
+    latitude: player.getLocation().latitude + gridCell.i * TILE_DEGREES,
+    longitude: player.getLocation().longitude + gridCell.j * TILE_DEGREES,
   };
 }
+*/
 
 function createTokenMarker(points: number) {
   return leaflet.divIcon({
@@ -110,7 +165,7 @@ function createTokenMarker(points: number) {
   });
 }
 
-function createGrid(cell: cellId) {
+function createGrid(cell: CellId) {
   // convert cell numbers into lat/lng bounds
   const origin = player.getLocation();
   const bounds = leaflet.latLngBounds([
@@ -155,7 +210,7 @@ function updateTokens() {
 }
 
 // add tokens to the map by cell numbers
-function spawnToken(cell: cellId) {
+function spawnToken(cell: CellId) {
   // convert cell numbers into lat/lng bounds
   const origin = player.getLocation();
 
@@ -190,7 +245,7 @@ function spawnToken(cell: cellId) {
   }
 }
 
-function interactToken(gridCell: cellId) {
+function interactToken(gridCell: CellId) {
   const pointValue = tokenValues.get(`${gridCell.i},${gridCell.j}`)!;
 
   if (player.getInv() === 0 && pointValue > 0) {
@@ -263,6 +318,30 @@ const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
 document.body.append(statusPanelDiv);
 
+const upButton: MoveButton = {
+  button: document.createElement("button"),
+  direction: "up",
+};
+upButton.button.innerHTML = "↑";
+
+const downButton: MoveButton = {
+  button: document.createElement("button"),
+  direction: "down",
+};
+downButton.button.innerHTML = "↓";
+
+const leftButton: MoveButton = {
+  button: document.createElement("button"),
+  direction: "left",
+};
+leftButton.button.innerHTML = "←";
+
+const rightButton: MoveButton = {
+  button: document.createElement("button"),
+  direction: "right",
+};
+rightButton.button.innerHTML = "→";
+
 // ============================================= //
 // ===               VARIABLES               === //
 // ============================================= //
@@ -279,8 +358,11 @@ const tokenIcons = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣"];
 const tokenValues = new Map<string, number>();
 const tokens: leaflet.Marker[] = [];
 
+const moveButtons = [upButton, downButton, rightButton, leftButton];
+
 const bus = new EventTarget();
 bus.addEventListener("token-changed", updateTokens);
+bus.addEventListener("location-changed", player.updateLocation.bind(player));
 
 // gameplay parameters
 const GAMEPLAY_ZOOM_LEVEL = 19;
@@ -334,3 +416,12 @@ player.retrieveGeo()
       }
     }
   });
+
+moveButtons.forEach((moveButton) => {
+  moveButton.button.id = `${moveButton.direction}Button`;
+  document.body.append(moveButton.button);
+  moveButton.button.addEventListener("click", () => {
+    player.move(moveButton.direction);
+    notify("location-changed");
+  });
+});
