@@ -413,7 +413,7 @@ bus.addEventListener("location-changed", () => {
 // gameplay parameters
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
-const NEIGHBORHOOD_LENGTH = 8;
+const NEIGHBORHOOD_LENGTH = 16;
 const NEIGHBORHOOD_WIDTH = 32;
 const CACHE_SPAWN_PROBABILITY = 0.2;
 
