@@ -69,3 +69,5 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] prevent `updateGrid()` from removing and re-adding all layers unnecessarily
 - [x] refactor `updateGrid()` to preserve existing persistent content
 - [x] add debug console log showing cell state on load (e.g., `console.log(cellKey, tokenValues.get(key))`)
+- [x] clean up ui of website using `style.css` and some `main.ts` reshuffling
+- [ ] add custom buttons for player movement

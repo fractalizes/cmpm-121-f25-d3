@@ -48,9 +48,9 @@ class Player {
     this.circle
       .addTo(map)
       .openPopup();
-    setTimeout(() => {
+    setTimeout(() => { // close popup after 5 seconds
       this.marker.closePopup();
-    }, 10000);
+    }, 5000);
   }
 
   updateLocation() {
@@ -185,7 +185,7 @@ function createTokenMarker(points: number) {
   return leaflet.divIcon({
     className: "",
     html: `
-      <div style="font-size:20px"> ${tokenIcons[points - 1]} </div>
+      <div style="font-size:18px"> ${tokenIcons[points - 1]} </div>
     `,
   });
 }
@@ -243,9 +243,10 @@ function spawnToken(cell: CellId) {
   }
   const value = tokenValues.get(key)!;
   if (value > 0) {
+    const offset = { lat: 0.7, long: 0.3 };
     const tokenMarker = leaflet.marker([
-      latitude + 0.75 * TILE_DEGREES,
-      longitude + 0.25 * TILE_DEGREES,
+      latitude + offset.lat * TILE_DEGREES,
+      longitude + offset.long * TILE_DEGREES,
     ]);
     tokenMarker
       .addTo(map)
@@ -267,20 +268,6 @@ function spawnToken(cell: CellId) {
     console.log(cell, tokenValues.get(key)); // debug line
   }
 }
-
-/*
-function updateTokens() {
-  for (const marker of tokens) {
-    map.removeLayer(marker);
-  }
-  tokens.splice(0, tokens.length);
-  for (let i = -NEIGHBORHOOD_LENGTH; i < NEIGHBORHOOD_LENGTH; i++) {
-    for (let j = -NEIGHBORHOOD_WIDTH; j < NEIGHBORHOOD_WIDTH; j++) {
-      spawnToken({ i: i + 0.5, j: j + 0.5 });
-    }
-  }
-}
-*/
 
 function interactToken(gridCell: CellId) {
   const pointValue = tokenValues.get(`${gridCell.i},${gridCell.j}`)!;
@@ -322,9 +309,7 @@ function interactToken(gridCell: CellId) {
         } so you have officially beat the game!
         `
         : `
-          Token merged! This token is now worth ${
-          tokenIcons[pointValue]
-        } points.<br>
+          Token merged! This token is now worth ${tokenIcons[pointValue]}<br>
           Your current highest token is ${tokenIcons[player.getHighest() - 1]}
         `;
     }
@@ -351,17 +336,28 @@ function outOfRange() {
   return popupDiv;
 }
 
+function createDividers(x: number) {
+  for (let i = 0; i < x; i++) {
+    const divider = document.createElement("div");
+    divider.id = `divider-${i}`;
+    divider.className = "divider";
+    divider.style = `grid-area: divider-box-${i}`;
+    controlPanelDiv.append(divider);
+  }
+}
+
 // ============================================= //
 // ===              UI ELEMENTS              === //
 // ============================================= //
 
-const controlPanelDiv = document.createElement("div");
-controlPanelDiv.id = "controlPanel";
-document.body.append(controlPanelDiv);
+const displayDiv = document.createElement("div");
+displayDiv.id = "display";
+document.body.append(displayDiv);
 
 const mapDiv = document.createElement("div");
 mapDiv.id = "map";
-document.body.append(mapDiv);
+mapDiv.style = "grid-area: map-box";
+displayDiv.append(mapDiv);
 
 const upButton: MoveButton = {
   button: document.createElement("button"),
@@ -389,7 +385,13 @@ rightButton.button.innerHTML = "→";
 
 const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
-document.body.append(statusPanelDiv);
+statusPanelDiv.style = "grid-area: status-box";
+displayDiv.append(statusPanelDiv);
+
+const controlPanelDiv = document.createElement("div");
+controlPanelDiv.id = "controlPanel";
+controlPanelDiv.style = "grid-area: control-box";
+displayDiv.append(controlPanelDiv);
 
 // ============================================= //
 // ===               VARIABLES               === //
@@ -476,9 +478,12 @@ player.retrieveGeo()
 
 moveButtons.forEach((moveButton) => {
   moveButton.button.id = `${moveButton.direction}Button`;
-  document.body.append(moveButton.button);
+  moveButton.button.style = `grid-area: ${moveButton.direction}-button-box`;
+  controlPanelDiv.append(moveButton.button);
   moveButton.button.addEventListener("click", () => {
     player.move(moveButton.direction);
     notify("location-changed");
   });
 });
+
+createDividers(5);
