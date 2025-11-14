@@ -42,7 +42,7 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - Crafting now increases the token's values
 - Win condition should be present once player reaches certain crafting threshold
 
-## Steps
+### Steps
 
 - [x] general housekeeping/cleaning for `main.ts` from last assignment
 - [x] make cells only generate token value of either 0 or 1
@@ -57,3 +57,15 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] regenerate cells when map fires moveend event
 - [x] cells are now drawn across the entirety of map
 - [x] create win event when player reaches win condition threshold
+
+## D3.c: Core Mechanics (object persistence)
+
+- When player leaves a generated area, cells and tokens retain their memory despite being scrolled off-screen
+- Player should not be able to "farm" tokens when leaving and re-entering an area
+
+### Steps
+
+- [ ] modify `spawnToken()` so it only creates visuals if no marker exists for that cell
+- [ ] prevent `updateGrid()` from removing and re-adding all layers unnecessarily
+- [ ] refactor `updateGrid()` to preserve existing persistent content
+- [ ] add debug console log showing cell state on load (e.g., `console.log(cellKey, tokenValues.get(key))`)
