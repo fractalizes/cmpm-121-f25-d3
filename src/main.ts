@@ -48,6 +48,9 @@ class Player {
     this.circle
       .addTo(map)
       .openPopup();
+    setTimeout(() => {
+      this.marker.closePopup();
+    }, 10000);
   }
 
   updateLocation() {
@@ -261,9 +264,11 @@ function spawnToken(cell: CellId) {
     } else {
       tokenMarker.bindPopup(outOfRange);
     }
+    console.log(cell, tokenValues.get(key)); // debug line
   }
 }
 
+/*
 function updateTokens() {
   for (const marker of tokens) {
     map.removeLayer(marker);
@@ -275,6 +280,7 @@ function updateTokens() {
     }
   }
 }
+*/
 
 function interactToken(gridCell: CellId) {
   const pointValue = tokenValues.get(`${gridCell.i},${gridCell.j}`)!;
@@ -404,7 +410,7 @@ const tokens: leaflet.Marker[] = [];
 const moveButtons = [upButton, downButton, leftButton, rightButton];
 
 const bus = new EventTarget();
-bus.addEventListener("token-changed", updateTokens);
+bus.addEventListener("token-changed", updateGrid);
 bus.addEventListener("location-changed", () => {
   player.updateLocation();
   updateGrid();

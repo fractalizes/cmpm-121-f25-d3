@@ -65,7 +65,7 @@ This is a game where you walk around your area and collect stacks. Combine stack
 
 ### Steps
 
-- [ ] modify `spawnToken()` so it only creates visuals if no marker exists for that cell
-- [ ] prevent `updateGrid()` from removing and re-adding all layers unnecessarily
-- [ ] refactor `updateGrid()` to preserve existing persistent content
-- [ ] add debug console log showing cell state on load (e.g., `console.log(cellKey, tokenValues.get(key))`)
+- [x] modify `spawnToken()` so it only creates visuals if no marker exists for that cell
+- [x] prevent `updateGrid()` from removing and re-adding all layers unnecessarily
+- [x] refactor `updateGrid()` to preserve existing persistent content
+- [x] add debug console log showing cell state on load (e.g., `console.log(cellKey, tokenValues.get(key))`)
