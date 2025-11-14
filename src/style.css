@@ -27,7 +27,7 @@ body {
 #statusPanel {
   width: 500px;
   padding: 4rem;
-  font-size: 20px;
+  font-size: 25px;
   text-align: center;
 }
 
@@ -47,7 +47,7 @@ body {
   border: 1px solid #ffffff;
   border-width: 4px;
   border-radius: 6px;
-  padding: 4rem;
+  padding: 2rem;
   font-size: 40px;
   cursor: pointer;
 }

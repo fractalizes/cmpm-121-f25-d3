@@ -11,6 +11,12 @@ import "./style.css"; // student-controlled page style
 import "./_leafletWorkaround.ts"; // fixes for missing leaflet images
 import luck from "./_luck.ts"; // luck function
 
+// images for buttons
+import downArrowUrl from "./down_arrow.png";
+import leftArrowUrl from "./left_arrow.png";
+import rightArrowUrl from "./right_arrow.png";
+import upArrowUrl from "./up_arrow.png";
+
 // ============================================= //
 // ===      CLASSES / TYPE / INTERFACES      === //
 // ============================================= //
@@ -142,6 +148,8 @@ type CellId = { i: number; j: number };
 
 interface MoveButton {
   button: HTMLButtonElement;
+  image: string;
+  symbol: string;
   direction: Direction;
 }
 
@@ -309,7 +317,7 @@ function interactToken(gridCell: CellId) {
         } so you have officially beat the game!
         `
         : `
-          Token merged! This token is now worth ${tokenIcons[pointValue]}<br>
+          Token merged! This token's now worth ${tokenIcons[pointValue]}<br>
           Your current highest token is ${tokenIcons[player.getHighest() - 1]}
         `;
     }
@@ -361,27 +369,31 @@ displayDiv.append(mapDiv);
 
 const upButton: MoveButton = {
   button: document.createElement("button"),
+  image: upArrowUrl,
+  symbol: "↑",
   direction: "up",
 };
-upButton.button.innerHTML = "↑";
 
 const downButton: MoveButton = {
   button: document.createElement("button"),
+  image: downArrowUrl,
+  symbol: "↓",
   direction: "down",
 };
-downButton.button.innerHTML = "↓";
 
 const leftButton: MoveButton = {
   button: document.createElement("button"),
+  image: leftArrowUrl,
+  symbol: "←",
   direction: "left",
 };
-leftButton.button.innerHTML = "←";
 
 const rightButton: MoveButton = {
   button: document.createElement("button"),
+  image: rightArrowUrl,
+  symbol: "→",
   direction: "right",
 };
-rightButton.button.innerHTML = "→";
 
 const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
@@ -477,6 +489,11 @@ player.retrieveGeo()
   });
 
 moveButtons.forEach((moveButton) => {
+  const arrowImage = new Image();
+  arrowImage.src = moveButton.image;
+  arrowImage.alt = moveButton.symbol;
+  moveButton.button.append(arrowImage);
+
   moveButton.button.id = `${moveButton.direction}Button`;
   moveButton.button.style = `grid-area: ${moveButton.direction}-button-box`;
   controlPanelDiv.append(moveButton.button);
