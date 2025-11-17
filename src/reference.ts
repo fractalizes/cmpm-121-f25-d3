@@ -113,3 +113,12 @@ for (let i = -NEIGHBORHOOD_SIZE; i < NEIGHBORHOOD_SIZE; i++) {
     }
   }
 }
+
+/* LEFT OVER TEST CODE, MIGHT USE LATER FOR FURTHER DEBUGGING
+
+const TEST_LOCATION = { latitude: 37.0, longitude: -122.0 };
+player.setLocation(TEST_LOCATION);
+player.setOrigin(TEST_LOCATION);
+map.setView([TEST_LOCATION.latitude, TEST_LOCATION.longitude], 15);
+
+*/

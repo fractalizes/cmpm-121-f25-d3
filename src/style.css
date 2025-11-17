@@ -6,6 +6,37 @@ body {
   font-family: "Pixelify Sans", sans-serif;
 }
 
+/* this stack overflow saved me tons of headache with the dialog, thank you!
+https://stackoverflow.com/questions/53423051/ */
+#overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #000000bf;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+#startingDialog {
+  font-size: 25px;
+  background-color: #ffffff;
+  padding: 2rem;
+}
+
+#closeDialog {
+  font-family: "Pixelify Sans", sans-serif;
+  font-size: 27.5px;
+  border: 5px solid #000000;
+  border-radius: 10px;
+  color: #ffffff;
+  background-color: rgb(255, 52, 52);
+  padding: 0.75rem;
+}
+
 #display {
   border: #ffffff;
   justify-content: center;
@@ -14,22 +45,74 @@ body {
   display: grid;
   grid-template-areas:
     "map-box settings-box"
-    "map-box status-box"
-    "map-box control-box";
+    "map-box control-box"
+    "status-box control-box";
 }
 
 #map {
   width: 75vh;
-  height: 75vh;
+  height: 50vh;
   border-radius: 10px;
-  padding: 5rem;
+  padding: 6rem;
+}
+
+#settingsPanel {
+  padding: 3rem;
+  width: 500px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  vertical-align: center;
+  gap: 1rem;
+}
+
+#controlSettingsPanel {
+  border: 2px solid #00ff11;
+  border-radius: 10px;
+  padding: 1rem;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+#controlSettingsPanel > button {
+  cursor: pointer;
+  color: #ffffff;
+  background-color: #ffffffa1;
+  border: 1px solid #ffffff;
+  border-width: 4px;
+  border-radius: 6px;
+  padding: 1rem;
+  font-size: 40px;
+}
+
+#controlSettingsPanel > button:disabled {
+  cursor: not-allowed;
+  background-color: #ffffff3a;
+  border: 1px solid #505050;
+  border-width: 4px;
+  border-radius: 6px;
+  padding: 1rem;
+  font-size: 40px;
 }
 
 #statusPanel {
-  width: 500px;
-  padding: 4rem;
-  font-size: 25px;
+  border: 1px solid #ffffff;
+  border-width: 4px;
+  border-radius: 6px;
+  padding: 1.5rem;
+  grid-template-areas:
+    "text-box"
+    "info-box";
+}
+
+#statusPanel > #consoleText {
+  font-size: 50px;
   text-align: center;
+}
+
+#statusPanel > #consoleLog {
+  font-size: 25px;
 }
 
 #controlPanel {
@@ -46,6 +129,17 @@ body {
   color: #ffffff;
   background-color: #ffffff3a;
   border: 1px solid #ffffff;
+  border-width: 4px;
+  border-radius: 6px;
+  padding: 1rem;
+  font-size: 40px;
+  cursor: pointer;
+}
+
+#clearButton {
+  color: #ffffff;
+  background-color: #ff000071;
+  border: 1px solid #ff0000;
   border-width: 4px;
   border-radius: 6px;
   padding: 1rem;

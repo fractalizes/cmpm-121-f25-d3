@@ -18,6 +18,40 @@ import rightArrowUrl from "./assets/right_arrow.png";
 import upArrowUrl from "./assets/up_arrow.png";
 
 // ============================================= //
+// ===       STARTING POPUP DIALOG BOX       === //
+// ============================================= //
+
+if (
+  !localStorage.getItem("player-data") && !localStorage.getItem("token-data")
+) {
+  document.body.innerHTML += `
+    <div id="overlay">
+      <dialog id="startingDialog">
+        <form method="dialog">
+          <button id="closeDialog">X</button><br><br>
+          Welcome to <b>Stacks!</b> In this game, your objective is to stack tokens of the same color to create new colors.<br>
+          Your end goal is to create a token stack with the color 🟣, good luck!
+        </form>
+      </dialog>
+    </div>
+  `;
+
+  const dialog = document.getElementById(
+    "startingDialog",
+  )! as HTMLDialogElement;
+  const closeDialog = document.getElementById(
+    "closeDialog",
+  )! as HTMLButtonElement;
+  const dialogOverlay = document.getElementById("overlay")! as HTMLDivElement;
+
+  dialog.showModal();
+  closeDialog.addEventListener("click", () => {
+    dialog.close();
+    dialogOverlay.remove();
+  });
+}
+
+// ============================================= //
 // ===      CLASSES / TYPE / INTERFACES      === //
 // ============================================= //
 
@@ -26,6 +60,8 @@ class Player {
   private origin: { latitude: number; longitude: number };
   private inv: number;
   private highest: number;
+  private tracking: boolean;
+  private recent: string;
   private marker: leaflet.Marker;
   private circle: leaflet.Circle;
 
@@ -42,13 +78,16 @@ class Player {
       };
       this.inv = parsed.inv;
       this.highest = parsed.highest;
+      this.recent = parsed.recent;
     } else {
       // default location if cannot retrieve player's current location
       this.location = CLASSROOM_LOCATION;
       this.origin = this.location;
       this.inv = 0;
       this.highest = 0;
+      this.recent = "do something!";
     }
+    this.tracking = true;
     this.marker = leaflet.marker([
       this.location.latitude,
       this.location.longitude,
@@ -88,8 +127,10 @@ class Player {
   }
 
   startTracking() {
+    this.tracking = true;
+
     if (!navigator.geolocation) {
-      console.error("Geolocation is not supported.");
+      console.error("[ERROR] geolocation is not supported");
       return;
     }
 
@@ -100,7 +141,7 @@ class Player {
       const dLat = Math.abs(latitude - lastLat);
       const dLong = Math.abs(longitude - lastLong);
 
-      if (dLat > TILE_DEGREES || dLong > TILE_DEGREES) {
+      if ((dLat > TILE_DEGREES || dLong > TILE_DEGREES) && this.tracking) {
         this.setLocation({ latitude, longitude });
         lastLat = dLat;
         lastLong = dLong;
@@ -118,6 +159,10 @@ class Player {
       maximumAge: 5000,
       timeout: 5000,
     });
+  }
+
+  stopTracking() {
+    this.tracking = false;
   }
 
   move(playerDirection: Direction) {
@@ -165,6 +210,7 @@ class Player {
       },
       inv: this.inv,
       highest: this.highest,
+      recent: this.recent,
     };
 
     try {
@@ -208,6 +254,14 @@ class Player {
 
   setHighest(points: number) {
     this.highest = points;
+  }
+
+  getRecent() {
+    return this.recent;
+  }
+
+  setRecent(text: string) {
+    this.recent = text;
   }
 }
 
@@ -339,7 +393,7 @@ function spawnToken(cell: CellId) {
 
   const key = `${cell.i},${cell.j}`;
   if (!tokenValues.has(key)) {
-    // Initialize only if not already set
+    // initialize only if not already set
     tokenValues.set(key, luck(key) <= CACHE_SPAWN_PROBABILITY ? 1 : 0);
   }
   const value = tokenValues.get(key)!;
@@ -372,30 +426,22 @@ function spawnToken(cell: CellId) {
 
 function interactToken(gridCell: CellId) {
   const pointValue = tokenValues.get(`${gridCell.i},${gridCell.j}`)!;
+  let updateText: string;
 
   if (player.getInv() === 0 && pointValue > 0) {
     player.setInv(pointValue);
     tokenValues.set(`${gridCell.i},${gridCell.j}`, 0);
-    statusPanelDiv.innerHTML = `
-      You have picked up a ${tokenIcons[pointValue - 1]} token.<br>
-      Place it at a token with the same value!
-    `;
+    updateText = `picked up ${tokenIcons[pointValue - 1]}`;
   } else if (player.getInv() > 0) {
     if (pointValue === 0) {
-      tokenValues.set(`${gridCell.i},${gridCell.j}`, player.getInv());
-      statusPanelDiv.innerHTML = `
-        You have dropped the ${tokenIcons[player.getInv() - 1]} token.
-      `;
+      const dropped = player.getInv();
+      tokenValues.set(`${gridCell.i},${gridCell.j}`, dropped);
       player.setInv(0);
+      updateText = `dropped token ${tokenIcons[dropped - 1]}`;
     } else if (player.getInv() !== pointValue) {
-      statusPanelDiv.innerHTML = `
-        You cannot merge these two tokens because that token has a value of ${
-        tokenIcons[pointValue - 1]
-      }!<br>
-        Currently, you are holding a ${
+      updateText = `cannot merge ${tokenIcons[pointValue - 1]} and ${
         tokenIcons[player.getInv() - 1]
-      } token, please place this at a token with the same value.
-      `;
+      }`;
     } else {
       tokenValues.set(`${gridCell.i},${gridCell.j}`, pointValue + 1);
       const newValue = tokenValues.get(`${gridCell.i},${gridCell.j}`)!;
@@ -403,22 +449,14 @@ function interactToken(gridCell: CellId) {
         player.setHighest(newValue);
       }
       player.setInv(0);
-      statusPanelDiv.innerHTML = player.getHighest() == tokenIcons.length
-        ? `
-          Congratulations! You have crafted a ${
-          tokenIcons[tokenIcons.length - 1]
-        } so you have officially beat the game!
-        `
-        : `
-          Token merged! This token's now worth ${tokenIcons[pointValue]}<br>
-          Your current highest token is ${tokenIcons[player.getHighest() - 1]}
-        `;
+      updateText = player.getHighest() == tokenIcons.length
+        ? `congratz on beating the game!`
+        : `created token ${tokenIcons[pointValue]}`;
     }
   } else {
-    statusPanelDiv.innerHTML = `
-      Please pick up a valid token!
-    `;
+    updateText = `please pick up a valid token!`;
   }
+  updateLog(updateText);
   notify("token-changed");
 }
 
@@ -435,6 +473,20 @@ function outOfRange() {
     popupDiv.remove();
   });
   return popupDiv;
+}
+
+function updateLog(text: string) {
+  consoleLogDiv.innerHTML = `<br>
+  <b>[INVENTORY]</b> currently holding: ${
+    player.getInv() > 0 ? tokenIcons[player.getInv() - 1] : "nothing"
+  }<br>
+  <b>[HIGHEST]</b> current highest token: ${
+    tokenIcons[
+      player.getHighest() > 0 ? player.getHighest() - 1 : player.getHighest()
+    ]
+  }<br>
+  <b>[RECENT]</b> ${text}`;
+  player.setRecent(text);
 }
 
 function createMovementButtons() {
@@ -489,14 +541,28 @@ mapDiv.style = "grid-area: map-box";
 displayDiv.append(mapDiv);
 
 const settingsPanelDiv = document.createElement("div");
-settingsPanelDiv.id = "statusPanel";
+settingsPanelDiv.id = "settingsPanel";
 settingsPanelDiv.style = "grid-area: settings-box";
 displayDiv.append(settingsPanelDiv);
+
+const controlSettingsPanelDiv = document.createElement("div");
+controlSettingsPanelDiv.id = "controlSettingsPanel";
+settingsPanelDiv.append(controlSettingsPanelDiv);
 
 const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
 statusPanelDiv.style = "grid-area: status-box";
 displayDiv.append(statusPanelDiv);
+
+const consoleTextDiv = document.createElement("div");
+consoleTextDiv.id = "consoleText";
+consoleTextDiv.style = "grid-area: text-box";
+statusPanelDiv.append(consoleTextDiv);
+
+const consoleLogDiv = document.createElement("div");
+consoleLogDiv.id = "consoleLog";
+consoleLogDiv.style = "grid-area: log-box";
+statusPanelDiv.append(consoleLogDiv);
 
 const controlPanelDiv = document.createElement("div");
 controlPanelDiv.id = "controlPanel";
@@ -534,14 +600,17 @@ const rightButton: MoveButton = {
 const geoButton = document.createElement("button");
 geoButton.innerHTML = "🌏";
 geoButton.disabled = true;
-settingsPanelDiv.append(geoButton);
+geoButton.id = "geoButton";
+controlSettingsPanelDiv.append(geoButton);
 
 const movementButton = document.createElement("button");
 movementButton.innerHTML = "🎮";
-settingsPanelDiv.append(movementButton);
+movementButton.id = "movementButton";
+controlSettingsPanelDiv.append(movementButton);
 
 const clearDataButton = document.createElement("button");
 clearDataButton.innerHTML = "🗑️";
+clearDataButton.id = "clearButton";
 settingsPanelDiv.append(clearDataButton);
 
 // ============================================= //
@@ -577,18 +646,14 @@ const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
 const NEIGHBORHOOD_LENGTH = 16;
 const NEIGHBORHOOD_WIDTH = 32;
-const CACHE_SPAWN_PROBABILITY = 0.2;
+const CACHE_SPAWN_PROBABILITY = 0.1;
 
 // ============================================= //
 // ===            GAME GENERATION            === //
 // ============================================= //
 
-statusPanelDiv.innerHTML = `
-  Welcome to <b>Stacks!</b> In this game, your objective is to stack tokens of the same color to create new colors.<br>
-  Your end goal is to create a token stack with the color ${
-  tokenIcons[tokenIcons.length - 1]
-}, good luck!
-`;
+consoleTextDiv.innerHTML = `<b>{CONSOLE}</b>`;
+updateLog(player.getRecent());
 
 const map = leaflet.map(mapDiv, { // element with id "map" is defined in index.html
   center: leaflet.latLng(
@@ -642,12 +707,14 @@ clearDataButton.addEventListener("click", () => {
 geoButton.addEventListener("click", () => {
   geoButton.disabled = true;
   movementButton.disabled = false;
+  player.startTracking();
   removeMovementButtons();
 });
 
 movementButton.addEventListener("click", () => {
   geoButton.disabled = false;
   movementButton.disabled = true;
+  player.stopTracking();
   createMovementButtons();
 });
 
