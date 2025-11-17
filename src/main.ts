@@ -87,6 +87,39 @@ class Player {
     map.panTo(this.marker.getLatLng());
   }
 
+  startTracking() {
+    if (!navigator.geolocation) {
+      console.error("Geolocation is not supported.");
+      return;
+    }
+
+    let lastLat = 0;
+    let lastLong = 0;
+    const handlePosition = (position: GeolocationPosition) => {
+      const { latitude, longitude } = position.coords;
+      const dLat = Math.abs(latitude - lastLat);
+      const dLong = Math.abs(longitude - lastLong);
+
+      if (dLat > TILE_DEGREES || dLong > TILE_DEGREES) {
+        this.setLocation({ latitude, longitude });
+        lastLat = dLat;
+        lastLong = dLong;
+        notify("location-changed");
+      }
+    };
+
+    const handleError = (error: GeolocationPositionError) => {
+      console.warn("[ERROR] geolocation error:", error.message);
+    };
+
+    navigator.geolocation.watchPosition(handlePosition, handleError, {
+      enableHighAccuracy: true, // gps
+      // below measured in ms
+      maximumAge: 10000,
+      timeout: 5000,
+    });
+  }
+
   move(playerDirection: Direction) {
     this.location = {
       latitude: this.location.latitude + (
@@ -560,6 +593,7 @@ player.retrieveGeo()
     player.markLocation();
     player.updateLocation();
     generateWorld();
+    player.startTracking();
   });
 
 clearDataButton.addEventListener("click", () => {
