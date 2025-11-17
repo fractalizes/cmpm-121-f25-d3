@@ -12,10 +12,10 @@ import "./_leafletWorkaround.ts"; // fixes for missing leaflet images
 import luck from "./_luck.ts"; // luck function
 
 // images for buttons
-import downArrowUrl from "./down_arrow.png";
-import leftArrowUrl from "./left_arrow.png";
-import rightArrowUrl from "./right_arrow.png";
-import upArrowUrl from "./up_arrow.png";
+import downArrowUrl from "./assets/down_arrow.png";
+import leftArrowUrl from "./assets/left_arrow.png";
+import rightArrowUrl from "./assets/right_arrow.png";
+import upArrowUrl from "./assets/up_arrow.png";
 
 // ============================================= //
 // ===      CLASSES / TYPE / INTERFACES      === //
@@ -24,16 +24,31 @@ import upArrowUrl from "./up_arrow.png";
 class Player {
   private location: { latitude: number; longitude: number };
   private origin: { latitude: number; longitude: number };
+  private inv: number;
+  private highest: number;
   private marker: leaflet.Marker;
   private circle: leaflet.Circle;
 
-  constructor(
-    private inv: number,
-    private highest: number,
-  ) {
-    // default location if cannot retrieve player's current location
-    this.location = CLASSROOM_LOCATION;
-    this.origin = this.location;
+  constructor(data: string | null) {
+    if (data !== null) {
+      const parsed = JSON.parse(data);
+      this.location = {
+        latitude: parsed.location.lat,
+        longitude: parsed.location.long,
+      };
+      this.origin = {
+        latitude: parsed.origin.lat,
+        longitude: parsed.origin.long,
+      };
+      this.inv = parsed.inv;
+      this.highest = parsed.highest;
+    } else {
+      // default location if cannot retrieve player's current location
+      this.location = CLASSROOM_LOCATION;
+      this.origin = this.location;
+      this.inv = 0;
+      this.highest = 0;
+    }
     this.marker = leaflet.marker([
       this.location.latitude,
       this.location.longitude,
@@ -103,6 +118,27 @@ class Player {
         (error) => reject(error),
       );
     });
+  }
+
+  savePlayerData() {
+    const playerData = {
+      location: {
+        lat: this.location?.latitude,
+        long: this.location?.longitude,
+      },
+      origin: {
+        lat: this.origin?.latitude,
+        long: this.origin?.longitude,
+      },
+      inv: this.inv,
+      highest: this.highest,
+    };
+
+    try {
+      localStorage.setItem("player-data", JSON.stringify(playerData));
+    } catch (e) {
+      console.error("[ERROR] failed to save player data: ", e);
+    }
   }
 
   getLayers() {
@@ -240,6 +276,30 @@ function updateGrid() {
   generateWorld();
 }
 
+function saveTokens() {
+  const tokenState: Record<string, number> = {};
+  for (const [key, value] of tokenValues) {
+    tokenState[key] = value;
+  }
+
+  try {
+    localStorage.setItem("token-data", JSON.stringify(tokenState));
+  } catch (e) {
+    console.error("[ERROR] failed to save token data: ", e);
+  }
+}
+
+function loadTokens(data: string | null) {
+  const tokenValues = new Map<string, number>();
+  if (data) {
+    const parsed = JSON.parse(data);
+    for (const key in parsed) {
+      tokenValues.set(key, parsed[key]);
+    }
+  }
+  return { tokenValues, tokens: [] as leaflet.Marker[] };
+}
+
 // add tokens to the map by cell numbers
 function spawnToken(cell: CellId) {
   const { latitude, longitude }: LatLong = ijToLatLong(cell);
@@ -273,7 +333,7 @@ function spawnToken(cell: CellId) {
     } else {
       tokenMarker.bindPopup(outOfRange);
     }
-    console.log(cell, tokenValues.get(key)); // debug line
+    /*console.log(cell, tokenValues.get(key));      debug line*/
   }
 }
 
@@ -367,6 +427,21 @@ mapDiv.id = "map";
 mapDiv.style = "grid-area: map-box";
 displayDiv.append(mapDiv);
 
+const settingsPanelDiv = document.createElement("div");
+settingsPanelDiv.id = "statusPanel";
+settingsPanelDiv.style = "grid-area: settings-box";
+displayDiv.append(settingsPanelDiv);
+
+const statusPanelDiv = document.createElement("div");
+statusPanelDiv.id = "statusPanel";
+statusPanelDiv.style = "grid-area: status-box";
+displayDiv.append(statusPanelDiv);
+
+const controlPanelDiv = document.createElement("div");
+controlPanelDiv.id = "controlPanel";
+controlPanelDiv.style = "grid-area: control-box";
+displayDiv.append(controlPanelDiv);
+
 const upButton: MoveButton = {
   button: document.createElement("button"),
   image: upArrowUrl,
@@ -395,15 +470,9 @@ const rightButton: MoveButton = {
   direction: "right",
 };
 
-const statusPanelDiv = document.createElement("div");
-statusPanelDiv.id = "statusPanel";
-statusPanelDiv.style = "grid-area: status-box";
-displayDiv.append(statusPanelDiv);
-
-const controlPanelDiv = document.createElement("div");
-controlPanelDiv.id = "controlPanel";
-controlPanelDiv.style = "grid-area: control-box";
-displayDiv.append(controlPanelDiv);
+const clearDataButton = document.createElement("button");
+clearDataButton.innerHTML = "🗑️";
+settingsPanelDiv.append(clearDataButton);
 
 // ============================================= //
 // ===               VARIABLES               === //
@@ -414,12 +483,15 @@ const CLASSROOM_LOCATION = {
   longitude: -122.05703507501151,
 };
 
-const player: Player = new Player(0, 0);
+const playerData = localStorage.getItem("player-data");
+const player: Player = new Player(playerData);
 const tokenIcons = ["🔴", "🟠", "🟡", "🟢", "🔵", "🟣"];
 
-// save token location points
-const tokenValues = new Map<string, number>();
-const tokens: leaflet.Marker[] = [];
+const tokenData = loadTokens(localStorage.getItem("token-data")!);
+const tokenValues = tokenData.tokenValues;
+const tokens = tokenData.tokens;
+
+let clearData: boolean = false;
 
 const moveButtons = [upButton, downButton, leftButton, rightButton];
 
@@ -469,6 +541,7 @@ leaflet
   })
   .addTo(map);
 
+// spawn player
 player.retrieveGeo()
   .then((coords) => {
     console.log(coords);
@@ -485,9 +558,18 @@ player.retrieveGeo()
   })
   .finally(() => {
     player.markLocation();
+    player.updateLocation();
     generateWorld();
   });
 
+clearDataButton.addEventListener("click", () => {
+  localStorage.clear();
+  clearData = true;
+  globalThis.location.replace(globalThis.location.href);
+});
+
+// create movement buttons
+createDividers(5);
 moveButtons.forEach((moveButton) => {
   const arrowImage = new Image();
   arrowImage.src = moveButton.image;
@@ -503,4 +585,9 @@ moveButtons.forEach((moveButton) => {
   });
 });
 
-createDividers(5);
+globalThis.addEventListener("beforeunload", () => {
+  if (!clearData) {
+    player.savePlayerData();
+    saveTokens();
+  }
+});

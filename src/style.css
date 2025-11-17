@@ -13,6 +13,7 @@ body {
   vertical-align: center;
   display: grid;
   grid-template-areas:
+    "map-box settings-box"
     "map-box status-box"
     "map-box control-box";
 }
@@ -47,7 +48,7 @@ body {
   border: 1px solid #ffffff;
   border-width: 4px;
   border-radius: 6px;
-  padding: 2rem;
+  padding: 1rem;
   font-size: 40px;
   cursor: pointer;
 }

@@ -83,9 +83,9 @@ This is a game where you walk around your area and collect stacks. Combine stack
 
 ### Steps
 
-- [ ] store data of tokens and location via `localStorage` JavaScript property
-- [ ] create a button that clears data when pressed
-- [ ] check data actually saves and clears when page is closed and reopened
+- [x] store data of tokens and location via `localStorage` JavaScript property
+- [x] create a button that clears data when pressed
+- [x] check data actually saves and clears when page is closed and reopened
 - [ ] update player's location everytime movement is detected
 - [ ] create a toggle switch for switching movement between geolocation and buttons
 - [ ] check if movement actually works by walking outside (hardest step)
