@@ -87,7 +87,7 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] create a button that clears data when pressed
 - [x] check data actually saves and clears when page is closed and reopened
 - [x] update player's location everytime movement is detected
-- [ ] create a toggle switch for switching movement between geolocation and buttons
-- [ ] check if movement actually works by walking outside (hardest step)
+- [x] create a toggle switch for switching movement between geolocation and buttons
+- [x] check if movement actually works by walking outside (hardest step)
 - [ ] clean up desktop website ui with css and html
 - [ ] clean up mobile website ui with ctrl+shift+m and css

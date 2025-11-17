@@ -115,7 +115,7 @@ class Player {
     navigator.geolocation.watchPosition(handlePosition, handleError, {
       enableHighAccuracy: true, // gps
       // below measured in ms
-      maximumAge: 10000,
+      maximumAge: 5000,
       timeout: 5000,
     });
   }
@@ -437,6 +437,34 @@ function outOfRange() {
   return popupDiv;
 }
 
+function createMovementButtons() {
+  createDividers(5);
+  moveButtons.forEach((moveButton) => {
+    const arrowImage = new Image();
+    arrowImage.src = moveButton.image;
+    arrowImage.alt = moveButton.symbol;
+    moveButton.button.append(arrowImage);
+
+    moveButton.button.id = `${moveButton.direction}Button`;
+    moveButton.button.style = `grid-area: ${moveButton.direction}-button-box`;
+    controlPanelDiv.append(moveButton.button);
+    moveButton.button.addEventListener("click", () => {
+      player.move(moveButton.direction);
+      notify("location-changed");
+    });
+  });
+}
+
+function removeMovementButtons() {
+  while (controlPanelDiv.firstChild) {
+    const image = controlPanelDiv.firstChild.firstChild;
+    if (image) {
+      image.remove();
+    }
+    controlPanelDiv.removeChild(controlPanelDiv.firstChild);
+  }
+}
+
 function createDividers(x: number) {
   for (let i = 0; i < x; i++) {
     const divider = document.createElement("div");
@@ -502,6 +530,15 @@ const rightButton: MoveButton = {
   symbol: "→",
   direction: "right",
 };
+
+const geoButton = document.createElement("button");
+geoButton.innerHTML = "🌏";
+geoButton.disabled = true;
+settingsPanelDiv.append(geoButton);
+
+const movementButton = document.createElement("button");
+movementButton.innerHTML = "🎮";
+settingsPanelDiv.append(movementButton);
 
 const clearDataButton = document.createElement("button");
 clearDataButton.innerHTML = "🗑️";
@@ -602,21 +639,16 @@ clearDataButton.addEventListener("click", () => {
   globalThis.location.replace(globalThis.location.href);
 });
 
-// create movement buttons
-createDividers(5);
-moveButtons.forEach((moveButton) => {
-  const arrowImage = new Image();
-  arrowImage.src = moveButton.image;
-  arrowImage.alt = moveButton.symbol;
-  moveButton.button.append(arrowImage);
+geoButton.addEventListener("click", () => {
+  geoButton.disabled = true;
+  movementButton.disabled = false;
+  removeMovementButtons();
+});
 
-  moveButton.button.id = `${moveButton.direction}Button`;
-  moveButton.button.style = `grid-area: ${moveButton.direction}-button-box`;
-  controlPanelDiv.append(moveButton.button);
-  moveButton.button.addEventListener("click", () => {
-    player.move(moveButton.direction);
-    notify("location-changed");
-  });
+movementButton.addEventListener("click", () => {
+  geoButton.disabled = false;
+  movementButton.disabled = true;
+  createMovementButtons();
 });
 
 globalThis.addEventListener("beforeunload", () => {
