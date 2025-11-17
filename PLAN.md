@@ -71,3 +71,23 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] add debug console log showing cell state on load (e.g., `console.log(cellKey, tokenValues.get(key))`)
 - [x] clean up ui of website using `style.css` and some `main.ts` reshuffling
 - [x] add custom buttons for player movement
+
+## D3.c: Core Mechanics (gameplay across the real-world)
+
+- Player needs a way of being able to start a new game
+- Player should be able to control themselves in-game via movement in the real world
+- On-screen controls should be hidden from the player and only accessible when the player chooses to use button controls
+  - Runtime Control (on-screen button)
+  - Page Query String (index.html?movement=geolocation vs index.html?movement=buttons)
+- Game should be able to save player's data and player should be able to access it again when opening the page back up
+
+### Steps
+
+- [ ] store data of tokens and location via `localStorage` JavaScript property
+- [ ] create a button that clears data when pressed
+- [ ] check data actually saves and clears when page is closed and reopened
+- [ ] update player's location everytime movement is detected
+- [ ] create a toggle switch for switching movement between geolocation and buttons
+- [ ] check if movement actually works by walking outside (hardest step)
+- [ ] clean up desktop website ui with css and html
+- [ ] clean up mobile website ui with ctrl+shift+m and css
