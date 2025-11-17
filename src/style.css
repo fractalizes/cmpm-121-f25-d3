@@ -66,7 +66,7 @@ https://stackoverflow.com/questions/53423051/ */
   gap: 1rem;
 }
 
-#controlSettingsPanel {
+#movementSettingsPanel {
   border: 2px solid #00ff11;
   border-radius: 10px;
   padding: 1rem;
@@ -75,7 +75,7 @@ https://stackoverflow.com/questions/53423051/ */
   gap: 0.25rem;
 }
 
-#controlSettingsPanel > button {
+#movementSettingsPanel > button {
   cursor: pointer;
   color: #ffffff;
   background-color: #ffffffa1;
@@ -86,7 +86,7 @@ https://stackoverflow.com/questions/53423051/ */
   font-size: 40px;
 }
 
-#controlSettingsPanel > button:disabled {
+#movementSettingsPanel > button:disabled {
   cursor: not-allowed;
   background-color: #ffffff3a;
   border: 1px solid #505050;
@@ -98,6 +98,7 @@ https://stackoverflow.com/questions/53423051/ */
 
 #statusPanel {
   border: 1px solid #ffffff;
+  background-color: #000000bf;
   border-width: 4px;
   border-radius: 6px;
   padding: 1.5rem;
@@ -153,4 +154,77 @@ https://stackoverflow.com/questions/5119711/ */
   height: 5px;
   width: 5px;
   display: inline-block;
+}
+
+@media (max-width: 900px) {
+  #startingDialog {
+    font-size: 18px;
+    padding: 1rem;
+    width: 90%;
+    max-width: 400px;
+  }
+
+  #closeDialog {
+    font-size: 20px;
+    padding: 0.5rem;
+  }
+
+  #display {
+    grid-template-areas:
+      "status-box settings-box"
+      "map-box map-box"
+      "control-box control-box";
+  }
+
+  #statusPanel {
+    padding: 1rem;
+  }
+
+  #statusPanel > #consoleText {
+    font-size: 20px;
+  }
+
+  #statusPanel > #consoleLog {
+    font-size: 15px;
+  }
+
+  #settingsPanel {
+    justify-self: center;
+    justify-content: center;
+    display: inline-grid;
+    padding: 0.25rem;
+    width: 10%;
+    grid-template-areas:
+      "movement-box"
+      "clear-box";
+  }
+
+  #movementSettingsPanel {
+    padding: 0.5rem;
+    width: 120%;
+  }
+
+  #settingsPanel > button,
+  #movementSettingsPanel > button,
+  #movementSettingsPanel > button:disabled {
+    padding: 7.5%;
+    width: 150%;
+    font-size: 25px;
+  }
+
+  #map {
+    justify-self: center;
+    width: 20vh;
+    height: 12.5vh;
+    border-radius: 10px;
+  }
+
+  #controlPanel {
+    min-height: 10%;
+    padding: 1rem;
+  }
+
+  .arrow-image {
+    max-width: 50%;
+  }
 }

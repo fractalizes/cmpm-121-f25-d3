@@ -493,6 +493,7 @@ function createMovementButtons() {
   createDividers(5);
   moveButtons.forEach((moveButton) => {
     const arrowImage = new Image();
+    arrowImage.classList.add("arrow-image");
     arrowImage.src = moveButton.image;
     arrowImage.alt = moveButton.symbol;
     moveButton.button.append(arrowImage);
@@ -500,11 +501,14 @@ function createMovementButtons() {
     moveButton.button.id = `${moveButton.direction}Button`;
     moveButton.button.style = `grid-area: ${moveButton.direction}-button-box`;
     controlPanelDiv.append(moveButton.button);
-    moveButton.button.addEventListener("click", () => {
-      player.move(moveButton.direction);
-      notify("location-changed");
-    });
+    if (!setMoveButtons) {
+      moveButton.button.addEventListener("click", () => {
+        player.move(moveButton.direction);
+        notify("location-changed");
+      });
+    }
   });
+  setMoveButtons = true;
 }
 
 function removeMovementButtons() {
@@ -545,9 +549,10 @@ settingsPanelDiv.id = "settingsPanel";
 settingsPanelDiv.style = "grid-area: settings-box";
 displayDiv.append(settingsPanelDiv);
 
-const controlSettingsPanelDiv = document.createElement("div");
-controlSettingsPanelDiv.id = "controlSettingsPanel";
-settingsPanelDiv.append(controlSettingsPanelDiv);
+const movementSettingsPanelDiv = document.createElement("div");
+movementSettingsPanelDiv.id = "movementSettingsPanel";
+movementSettingsPanelDiv.style = "grid-area: movement-box";
+settingsPanelDiv.append(movementSettingsPanelDiv);
 
 const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
@@ -601,16 +606,17 @@ const geoButton = document.createElement("button");
 geoButton.innerHTML = "🌏";
 geoButton.disabled = true;
 geoButton.id = "geoButton";
-controlSettingsPanelDiv.append(geoButton);
+movementSettingsPanelDiv.append(geoButton);
 
 const movementButton = document.createElement("button");
 movementButton.innerHTML = "🎮";
 movementButton.id = "movementButton";
-controlSettingsPanelDiv.append(movementButton);
+movementSettingsPanelDiv.append(movementButton);
 
 const clearDataButton = document.createElement("button");
 clearDataButton.innerHTML = "🗑️";
 clearDataButton.id = "clearButton";
+clearDataButton.style = "grid-area: clear-box";
 settingsPanelDiv.append(clearDataButton);
 
 // ============================================= //
@@ -631,6 +637,7 @@ const tokenValues = tokenData.tokenValues;
 const tokens = tokenData.tokens;
 
 let clearData: boolean = false;
+let setMoveButtons: boolean = false;
 
 const moveButtons = [upButton, downButton, leftButton, rightButton];
 

@@ -90,4 +90,4 @@ This is a game where you walk around your area and collect stacks. Combine stack
 - [x] create a toggle switch for switching movement between geolocation and buttons
 - [x] check if movement actually works by walking outside (hardest step)
 - [x] clean up desktop website ui with css and html
-- [ ] clean up mobile website ui with ctrl+shift+m and css
+- [x] clean up mobile website ui with ctrl+shift+m and css
